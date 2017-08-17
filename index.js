@@ -42,34 +42,22 @@ var callbackAccount = function(err, result) {
     }
     var res = result;
     console.log(res.records.length);
-	
     for (var i = res.records.length - 1; i >= 0; i--) {
-		
         if (res.records[i].Attachments != null) {
-            console.log('is null ' + res.records[i].Attachments.totalSize);
-            console.log(res.records[i].Name);
-            console.log(res.records[i].Name + 'Have Attachments');
             var AccountName = (res.records[i].Name).replace(',', '').replace('.', '_').replace(/ /g, '_');
             var dir = config.folderDir + AccountName;
 			
             console.log(dir + ' ' + !fs.existsSync(dir));
             if (!fs.existsSync(dir)) {
                 console.log('creating directory'+i);
-                //fs.mkdirSync(dir);
-				console.log('i is --> '+i);
 				var index = i;
                 fs.mkdir(dir,index, function(err,responseDir) {
                     if (err) {
                         console.log('error in mkdir: ' + err);
-                    } else {
-						console.log('log in callback')
-						console.log('index i --> '+i+'----> '+ dirIndexMap.get(dir)+'--index-->'+index );
-						console.log(dirIndexMap.get('/pankaj'));
-                    }
+                    } 
                 });
                 console.log('This is dir --> ' + dir);
 				dirIndexMap.set(dir,i);
-				console.log('index i --> '+i+'----> '+ dirIndexMap.get(dir)+'--index-->'+index );
             }else{
 				downloadFile(res,dir,i);
 			}
@@ -77,7 +65,6 @@ var callbackAccount = function(err, result) {
     }
 }
 function downloadFile(res,dir,i ){
-	console.log('in download File');
 	if(res.records[i] && res.records[i].Attachments){
 		console.log('This is res.records[i].Attachments.totalSize  --> ' + res.records[i].Attachments.totalSize);
 		for (var j = res.records[i].Attachments.totalSize - 1; j >= 0; j--) {
@@ -86,7 +73,6 @@ function downloadFile(res,dir,i ){
 			var fileOut = fs.createWriteStream(filepath);
 			console.log('file path' + filepath);
 			if (!fs.existsSync(filepath)) {
-				console.log('in existsSync');			
 				conn.sobject('Attachment').record(res.records[i].Attachments.records[j].Id).blob('Body').pipe(fileOut)
 				.on ("error", function(error) {
 					console.log(error);

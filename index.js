@@ -99,36 +99,7 @@ function downloadFile(res,dir,i ){
 	}
 }
 
-function downloadFiles(res,dirIndexMap ){
-	console.log('in dowbloadFiles');
-	console.log(dirIndexMap);
-	for (var [key, value] of dirIndexMap) {
-		console.log('--key--> '+key);
-		console.log('--value--> '+value);
-		i = value;
-		var dir = key;
-		if(res.records[i] && res.records[i].Attachments){
-			console.log('This is res.records[i].Attachments.totalSize  --> ' + res.records[i].Attachments.totalSize);
-			for (var j = res.records[i].Attachments.totalSize - 1; j >= 0; j--) {
-				console.log('This is res.records[i] --> ' + res.records[i]);
-				var filepath = dir + '/' + res.records[i].Attachments.records[j].Name;
-				console.log('file path' + filepath);
-				if (!fs.existsSync(filepath)) {
-					console.log('in existsSync');
-					conn.sobject('Attachment').record(res.records[i].Attachments.records[j].Id).blob('Body').pipe(fs.createWriteStream(filepath)).then(
-						function(res){
-							console.log('created : ' + res);
-							console.log('**************************');
-						}
-					);
-					console.log('fter existsSync');
-				}
-				console.log('test firstr');
-				// 
-			} //for
-		}
-	}
-}
+
 app.set('port', (process.env.PORT || 5000))
 app.use(express.static(__dirname + '/public'))
 

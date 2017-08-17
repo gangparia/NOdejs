@@ -61,7 +61,7 @@ var callbackAccount = function(err, result) {
                 console.log('This is dir --> ' + dir);
 				
             }else{
-				//downloadFile(res,dir,i);
+				downloadFile(res,dir,i);
 			}
         } //end if
     }

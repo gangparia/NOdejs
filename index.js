@@ -28,7 +28,7 @@ conn.login(config.userName, config.pwd, function(err, res) {
                 query = conn.queryMore(res.nextRecordsUrl, handleResult);
             }
         }
-        console.log(res);
+        //console.log(res);
     });
 });
 
@@ -42,13 +42,15 @@ var callbackAccount = function(err, result) {
     }
     var res = result;
     console.log(res.records.length);
+	var isDownloadContactFiles = true;
     for (var i = res.records.length - 1; i >= 0; i--) {
         if (res.records[i].Attachments != null) {
             var AccountName = (res.records[i].Name).replace(',', '').replace('.', '_').replace(/ /g, '_');
             var dir = config.folderDir + AccountName;
-			
+			dirIndexMap.set(res.records[i].Id,dir);
             console.log(dir + ' ' + !fs.existsSync(dir));
             if (!fs.existsSync(dir)) {
+				isDownloadContactFiles = false;
                 console.log('creating directory'+i);
 				var index = i;
                 fs.mkdir(dir,index, function(err,responseDir) {
@@ -57,21 +59,26 @@ var callbackAccount = function(err, result) {
                     } 
                 });
                 console.log('This is dir --> ' + dir);
-				dirIndexMap.set(dir,i);
+				
             }else{
-				downloadFile(res,dir,i);
+				//downloadFile(res,dir,i);
 			}
         } //end if
     }
+	console.log('isDownloadContactFiles-->'+isDownloadContactFiles);
+	//console.log(dirIndexMap);
+	if(isDownloadContactFiles){
+		downloadContactFiles(dirIndexMap);
+	}
 }
 function downloadFile(res,dir,i ){
 	if(res.records[i] && res.records[i].Attachments){
-		console.log('This is res.records[i].Attachments.totalSize  --> ' + res.records[i].Attachments.totalSize);
+		//console.log('This is res.records[i].Attachments.totalSize  --> ' + res.records[i].Attachments.totalSize);
 		for (var j = res.records[i].Attachments.totalSize - 1; j >= 0; j--) {
-			console.log('This is res.records[i] --> ' + res.records[i]);
+			//console.log('This is res.records[i] --> ' + res.records[i]);
 			var filepath = dir + '/' + res.records[i].Attachments.records[j].Name;
 			var fileOut = fs.createWriteStream(filepath);
-			console.log('file path' + filepath);
+			//console.log('file path' + filepath);
 			if (!fs.existsSync(filepath)) {
 				conn.sobject('Attachment').record(res.records[i].Attachments.records[j].Id).blob('Body').pipe(fileOut)
 				.on ("error", function(error) {
@@ -84,7 +91,53 @@ function downloadFile(res,dir,i ){
 		} //for
 	}
 }
+function downloadContactFiles(dirIndexMap){
+	//console.log(dirIndexMap);
+	//console.log(dirIndexMap.keys());
+	var accountIds ='(';
+	for (var key of dirIndexMap.keys()) {
+		console.log(key);
+		accountIds += "'"+key+"',";
+	}
+	accountIds = accountIds.substring(0, accountIds.length-1) + ')';
+	console.log(accountIds);
+	conn.query('SELECT Id, Name,Account.Name,(SELECT id ,CreatedDate , Name FROM Attachments) FROM Contact where accountId IN '+accountIds, function(err, res) {
+        if (err) {
+            return console.error(err);
+        } else {
+            records.push.apply(records, res.records);
+            if (res.done) {
+                //console.log(records);
+				 callbackContact(null, {
+                    result: res,
+                    records: records
+                });
+            } else {
 
+                query = conn.queryMore(res.nextRecordsUrl, handleResult);
+            }
+        }
+        console.log(res);
+    });
+}
+
+var callbackContact = function(err, result) {
+    if (err) {
+        throw err;
+    }
+    var res = result;
+    console.log(res.records.length);
+    for (var i = res.records.length - 1; i >= 0; i--) {
+        if (res.records[i].Attachments != null) {
+            var AccountName = (res.records[i].Account.Name).replace(',', '').replace('.', '_').replace(/ /g, '_');
+            var dir = config.folderDir + AccountName;
+			dirIndexMap.set(res.records[i].Id,dir);
+            console.log(dir + ' ' + !fs.existsSync(dir));
+			downloadFile(res,dir,i);
+			
+        } //end if
+    }	
+}
 
 app.set('port', (process.env.PORT || 5000))
 app.use(express.static(__dirname + '/public'))

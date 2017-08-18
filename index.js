@@ -1,7 +1,4 @@
-var express = require('express')
-var app = express();
 var fs = require('fs');
-const readline = require('readline');
 var jsforce = require('jsforce');
 var config = require('./config');
 
@@ -24,11 +21,9 @@ conn.login(config.userName, config.pwd, function(err, res) {
                     records: records
                 });
             } else {
-
                 query = conn.queryMore(res.nextRecordsUrl, handleResult);
             }
         }
-        //console.log(res);
     });
 });
 
@@ -42,15 +37,13 @@ var callbackAccount = function(err, result) {
     }
     var res = result;
     console.log(res.records.length);
-	var isDownloadContactFiles = true;
     for (var i = res.records.length - 1; i >= 0; i--) {
-        if (res.records[i].Attachments != null) {
-            var AccountName = (res.records[i].Name).replace(',', '').replace('.', '_').replace(/ /g, '_');
-            var dir = config.folderDir + AccountName;
-			dirIndexMap.set(res.records[i].Id,dir);
-            console.log(dir + ' ' + !fs.existsSync(dir));
+		var AccountName = (res.records[i].Name).replace(',', '').replace('.', '_').replace(/ /g, '_');
+		var dir = config.folderDir + AccountName;
+		dirIndexMap.set(res.records[i].Id,dir);
+        if (res.records[i].Attachments != null) { 
+            //console.log(dir + ' ' + !fs.existsSync(dir));
             if (!fs.existsSync(dir)) {
-				isDownloadContactFiles = false;
                 console.log('creating directory'+i);
 				var index = i;
                 fs.mkdir(dir,index, function(err,responseDir) {
@@ -65,11 +58,8 @@ var callbackAccount = function(err, result) {
 			}
         } //end if
     }
-	console.log('isDownloadContactFiles-->'+isDownloadContactFiles);
-	//console.log(dirIndexMap);
-	if(isDownloadContactFiles){
-		downloadContactFiles(dirIndexMap);
-	}
+	downloadContactFiles(dirIndexMap);
+	
 }
 function downloadFile(res,dir,i ){
 	if(res.records[i] && res.records[i].Attachments){
@@ -84,16 +74,11 @@ function downloadFile(res,dir,i ){
 				.on ("error", function(error) {
 					console.log(error);
 				})
-				console.log('fter existsSync');
-			}
-			console.log('test firstr');
-			
+			}			
 		} //for
 	}
 }
 function downloadContactFiles(dirIndexMap){
-	//console.log(dirIndexMap);
-	//console.log(dirIndexMap.keys());
 	var accountIds ='(';
 	for (var key of dirIndexMap.keys()) {
 		console.log(key);
@@ -110,14 +95,12 @@ function downloadContactFiles(dirIndexMap){
                 //console.log(records);
 				 callbackContact(null, {
                     result: res,
-                    records: records
+                    records: records,
                 });
             } else {
-
                 query = conn.queryMore(res.nextRecordsUrl, handleResult);
             }
         }
-        console.log(res);
     });
 }
 
@@ -127,25 +110,27 @@ var callbackContact = function(err, result) {
     }
     var res = result;
     console.log(res.records.length);
-    for (var i = res.records.length - 1; i >= 0; i--) {
-        if (res.records[i].Attachments != null) {
-            var AccountName = (res.records[i].Account.Name).replace(',', '').replace('.', '_').replace(/ /g, '_');
-            var dir = config.folderDir + AccountName;
-			dirIndexMap.set(res.records[i].Id,dir);
-            console.log(dir + ' ' + !fs.existsSync(dir));
-			downloadFile(res,dir,i);
-			
-        } //end if
+    for (var i = res.records.length - 1; i >= 0; i--) {     
+		for (var i = res.records.length - 1; i >= 0; i--) {
+			if (res.records[i].Attachments != null) {
+				var AccountName = (res.records[i].Account.Name).replace(',', '').replace('.', '_').replace(/ /g, '_');
+				var dir = config.folderDir + AccountName;
+				dirIndexMap.set(res.records[i].Id,dir);
+				console.log(dir + ' ' + !fs.existsSync(dir));
+				if (!fs.existsSync(dir)) {
+					console.log('creating directory'+i);
+					var index = i;
+					fs.mkdir(dir,index, function(err,responseDir) {
+						if (err) {
+							console.log('error in mkdir: ' + err);
+						} 
+					});
+					console.log('This is dir --> ' + dir);
+					
+				}else{
+					downloadFile(res,dir,i);
+				}
+			} //end if
+		}
     }	
 }
-
-app.set('port', (process.env.PORT || 5000))
-app.use(express.static(__dirname + '/public'))
-
-app.get('/', function(request, response) {
-    response.send('Hello World!')
-})
-
-app.listen(app.get('port'), function() {
-    console.log("Node app is running at localhost:" + app.get('port'))
-})

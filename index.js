@@ -175,5 +175,5 @@ var callbackContact = function(err, result) {
     logger.info('Number of contact record having attachments : ' + contactRecordCount);
     logger.info('Number of folder created : ' + numberOfFolderCreated);
     logger.info('Number of  attachments downloaded : ' + numberOfAttachmentCount);
-    console.log('outttttttttttttttttttttttttttttttttttttttttttttttt');
+    console.log('process finished');
 }
